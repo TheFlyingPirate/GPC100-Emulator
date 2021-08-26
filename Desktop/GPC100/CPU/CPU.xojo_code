@@ -68,7 +68,23 @@ Protected Class CPU
 		    return Bitwise.ShiftLeft(p0,1)
 		  case 7
 		    return Bitwise.ShiftRight(p0,1)
-		    
+		  case 8
+		    if p0=p1 then
+		      eq=true
+		    else
+		      eq=false
+		    end
+		    if p0>p1 then
+		      gt=true
+		    else
+		      gt=false
+		    end
+		    if p0=0 then
+		      ze=true
+		    else
+		      ze=false
+		    end
+		    return 0
 		  End Select
 		End Function
 	#tag EndMethod
@@ -91,6 +107,106 @@ Protected Class CPU
 		    Case &h00  //NOP
 		      stepCounter = 0
 		      InstructionPointer=InstructionPointer+4
+		    Case &h01 //JMP
+		      MemoryPointer = curBus.Read(InstructionPointer+1)
+		      MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		      MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		      stepCounter = 0
+		      InstructionPointer=MemoryPointer
+		    Case &h02 //CMP
+		      Dim b as byte = ALU(8,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer = InstructionPointer+4
+		    Case &h03 //JEQ
+		      if eq = true then
+		        MemoryPointer = curBus.Read(InstructionPointer+1)
+		        MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		        MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		        stepCounter = 0
+		        InstructionPointer=MemoryPointer
+		      else
+		        InstructionPointer=InstructionPointer + 4
+		      end
+		    Case &h04 //JNE
+		      if eq = false then
+		        MemoryPointer = curBus.Read(InstructionPointer+1)
+		        MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		        MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		        stepCounter = 0
+		        InstructionPointer=MemoryPointer
+		      else
+		        InstructionPointer=InstructionPointer + 4
+		      end
+		    Case &h05 //JGT
+		      if gt = true then
+		        MemoryPointer = curBus.Read(InstructionPointer+1)
+		        MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		        MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		        stepCounter = 0
+		        InstructionPointer=MemoryPointer
+		      else
+		        InstructionPointer=InstructionPointer + 4
+		      end
+		    Case &h06 //JLT
+		      if gt = false and eq =false then
+		        MemoryPointer = curBus.Read(InstructionPointer+1)
+		        MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		        MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		        stepCounter = 0
+		        InstructionPointer=MemoryPointer
+		      else
+		        InstructionPointer=InstructionPointer + 4
+		      end
+		    Case &h07 //JGE
+		      if gt = true or eq =true then
+		        MemoryPointer = curBus.Read(InstructionPointer+1)
+		        MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		        MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		        stepCounter = 0
+		        InstructionPointer=MemoryPointer
+		      else
+		        InstructionPointer=InstructionPointer + 4
+		      end
+		    Case &h08 //JLE
+		      if gt = false then
+		        MemoryPointer = curBus.Read(InstructionPointer+1)
+		        MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		        MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		        stepCounter = 0
+		        InstructionPointer=MemoryPointer
+		      else
+		        InstructionPointer=InstructionPointer + 4
+		      end
+		    Case &h09 //JZE
+		      if ze=true then
+		        MemoryPointer = curBus.Read(InstructionPointer+1)
+		        MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		        MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		        stepCounter = 0
+		        InstructionPointer=MemoryPointer
+		      else
+		        InstructionPointer=InstructionPointer + 4
+		      end
+		    Case &h0a //JSR
+		      InstructionPointer=InstructionPointer+4
+		      curBus.Write(StackPointer,Bitwise.ShiftRight(InstructionPointer,8))
+		      StackPointer = StackPointer - 1
+		      curBus.Write(StackPointer,InstructionPointer And &h00ff)
+		      StackPointer = StackPointer - 1
+		      InstructionPointer = InstructionPointer - 4
+		      MemoryPointer = curBus.Read(InstructionPointer+1)
+		      MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		      MemoryPointer = MemoryPointer + curBus.Read(InstructionPointer+2)
+		      stepCounter = 0
+		      InstructionPointer=MemoryPointer
+		    Case &h0b //RSR
+		      StackPointer=StackPointer+1
+		      MemoryPointer = curBus.Read(StackPointer)
+		      StackPointer=StackPointer+1
+		      MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
+		      MemoryPointer = MemoryPointer + curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=MemoryPointer
 		    Case &h10 //LDR R0
 		      MemoryPointer = curBus.Read(InstructionPointer+1)
 		      MemoryPointer = Bitwise.ShiftLeft(MemoryPointer,8)
@@ -243,6 +359,86 @@ Protected Class CPU
 		      curBus.Write(MemoryPointer,R7)
 		      stepCounter = 0
 		      InstructionPointer=InstructionPointer+4
+		    Case &h30 //PUL R0
+		      StackPointer=StackPointer+1
+		      R0 = curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h31 //PUL R1
+		      StackPointer=StackPointer+1
+		      R1 = curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h32 //PUL R2
+		      StackPointer=StackPointer+1
+		      R2 = curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h33 //PUL R3
+		      StackPointer=StackPointer+1
+		      R3 = curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h34 //PUL R4
+		      StackPointer=StackPointer+1
+		      R4 = curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h35 //PUL R5
+		      StackPointer=StackPointer+1
+		      R5 = curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h36 //PUL R6
+		      StackPointer=StackPointer+1
+		      R6 = curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h37 //PUL R7
+		      StackPointer=StackPointer+1
+		      R7 = curBus.Read(StackPointer)
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h38 //PUT R0
+		      curBus.Write(StackPointer,R0)
+		      StackPointer=StackPointer-1
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h39 //PUT R1
+		      curBus.Write(StackPointer,R1)
+		      StackPointer=StackPointer-1
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h3a //PUT R2
+		      curBus.Write(StackPointer,R2)
+		      StackPointer=StackPointer-1
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h3b //PUT R3
+		      curBus.Write(StackPointer,R3)
+		      StackPointer=StackPointer-1
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h3c //PUT R4
+		      curBus.Write(StackPointer,R4)
+		      StackPointer=StackPointer-1
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h3d //PUT R5
+		      curBus.Write(StackPointer,R5)
+		      StackPointer=StackPointer-1
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h3e //PUT R6
+		      curBus.Write(StackPointer,R6)
+		      StackPointer=StackPointer-1
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &h3f //PUT R7
+		      curBus.Write(StackPointer,R7)
+		      StackPointer=StackPointer-1
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
 		    Case &h80 //ADD R0
 		      R0 = ALU(0,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
 		      stepCounter = 0
@@ -368,9 +564,139 @@ Protected Class CPU
 		      stepCounter = 0
 		      InstructionPointer=InstructionPointer+4
 		    Case &h9f //OR R7
-		      R0 = ALU(3,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      R7 = ALU(3,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
 		      stepCounter = 0
 		      InstructionPointer=InstructionPointer+4
+		    Case &ha0 //NOT R0
+		      R0 = ALU(4,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha1 //NOT R1
+		      R1 = ALU(4,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha2 //NOT R2
+		      R2 = ALU(4,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha3 //NOT R3
+		      R3 = ALU(4,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha4 //NOT R4
+		      R4 = ALU(4,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha5 //NOT R5
+		      R5 = ALU(4,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha6 //NOT R6
+		      R6 = ALU(4,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha7 //NOT R7
+		      R7 = ALU(4,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha8 //XOR R0
+		      R0 = ALU(5,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &ha9 //XOR R1
+		      R1 = ALU(5,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &haa //XOR R2
+		      R0 = ALU(5,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hab //XOR R3
+		      R3 = ALU(5,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hac //XOR R4
+		      R4 = ALU(5,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &had //XOR R5
+		      R5 = ALU(5,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hae //XOR R6
+		      R6 = ALU(5,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &haf //XOR R7
+		      R0 = ALU(5,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb0 //SL R0
+		      R0 = ALU(6,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb1 //SL R1
+		      R1 = ALU(6,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb2 //SL R2
+		      R2 = ALU(6,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb3 //SL R3
+		      R3 = ALU(6,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb4 //SL R4
+		      R4 = ALU(6,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb5 //SL R5
+		      R5 = ALU(6,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb6 //SL R6
+		      R6 = ALU(6,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb7 //SL R7
+		      R7= ALU(6,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb8 //SR R0
+		      R0 = ALU(7,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hb9 //SR R1
+		      R1 = ALU(7,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hba //SR R2
+		      R2 = ALU(7,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hbb //SR R3
+		      R3 = ALU(7,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hbc //SR R4
+		      R4 = ALU(7,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hbd //SR R5
+		      R5 = ALU(7,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hbe //SR R6
+		      R6 = ALU(7,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Case &hbf //SR R0
+		      R7 = ALU(7,curBus.Read(InstructionPointer+1),curBus.Read(InstructionPointer+2))
+		      stepCounter = 0
+		      InstructionPointer=InstructionPointer+4
+		    Else
+		      MessageBox("Unvailid OpCode at " + InstructionPointer.ToHex)
 		    End Select
 		  end if
 		End Sub
@@ -383,6 +709,14 @@ Protected Class CPU
 
 	#tag Property, Flags = &h0
 		curBus As Bus
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		eq As Boolean
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		gt As Boolean
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
@@ -430,7 +764,15 @@ Protected Class CPU
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
+		StackPointer As Uint16
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
 		stepCounter As Byte
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
+		ze As Boolean
 	#tag EndProperty
 
 

@@ -60,13 +60,12 @@ Begin Window Window1
       Scope           =   0
       TabPanelIndex   =   0
    End
-   Begin Timer tmrAdd
-      Enabled         =   True
+   Begin Thread mainThread
       Index           =   -2147483648
       LockedInPosition=   False
-      Period          =   5
-      RunMode         =   2
+      Priority        =   5
       Scope           =   0
+      StackSize       =   0
       TabPanelIndex   =   0
    End
 End
@@ -75,21 +74,12 @@ End
 #tag WindowCode
 	#tag Event
 		Sub Open()
-		  for i as integer = 0 to 199
-		    for i2 as integer = 0 to 149
-		      FB.Add(Color.Black)
-		    next
-		  next
 		  
-		  FB(0)=Color.Brown
 		  tmrRefresh.Enabled=True
-		  Canvas1.Refresh
-		  test=1
-		  tmrAdd.Enabled = True
 		  
 		  GPC100 = new mainSystem()
-		  GPC100.tick()
-		  GPC100.tick
+		  
+		  mainThread.Start()
 		End Sub
 	#tag EndEvent
 
@@ -114,7 +104,7 @@ End
 		Sub Paint(g As Graphics, areas() As REALbasic.Rect)
 		  for x as double =0 to 199
 		    for y as double =0 to 149
-		      g.DrawingColor = FB(y*199+x)
+		      g.DrawingColor = GPC100.gpu.FB(y*199+x)
 		      g.FillRectangle(x,y,1,1)
 		    next
 		  next
@@ -128,11 +118,12 @@ End
 		End Sub
 	#tag EndEvent
 #tag EndEvents
-#tag Events tmrAdd
+#tag Events mainThread
 	#tag Event
-		Sub Action()
-		  FB(test)=Color.Brown
-		  test=test+1
+		Sub Run()
+		  while true
+		    GPC100.tick
+		  wend
 		End Sub
 	#tag EndEvent
 #tag EndEvents
